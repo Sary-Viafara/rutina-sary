@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- PWA -->
+<meta name="theme-color" content="#7B61FF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mi Rutina">
+<meta name="application-name" content="Mi Rutina">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>Mi Rutina · Sary</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0A0A0F;
+    --surface: #12121A;
+    --surface2: #1A1A26;
+    --border: #2A2A3A;
+    --text: #E8E8F0;
+    --muted: #6A6A8A;
+    --accent: #7B61FF;
+    --accent2: #FF6B9D;
+    --accent3: #61FFD4;
+    --gold: #FFD166;
+    --morning: #FF9A3C;
+    --boot: #4ECDC4;
+    --night: #7B61FF;
+    --rest: #FF6B9D;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* animated bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: 
+      radial-gradient(ellipse 600px 400px at 80% 20%, rgba(123,97,255,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 10% 80%, rgba(97,255,212,0.05) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; padding: 32px 20px 60px; }
+
+  /* HEADER */
+  header { margin-bottom: 40px; }
+
+  .tag {
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  h1 {
+    font-size: clamp(32px, 8vw, 56px);
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  h1 span { color: var(--accent2); }
+
+  .sub {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--muted);
+    line-height: 1.6;
+    font-weight: 400;
+  }
+
+  /* PHASE TOGGLE */
+  .phase-toggle {
+    display: flex;
+    gap: 8px;
+    margin: 28px 0 32px;
+    background: var(--surface);
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .phase-btn {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--muted);
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+  }
+
+  .phase-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  /* DAY VIEW */
+  .day-view { display: none; }
+  .day-view.active { display: block; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* CONTEXT PILL */
+  .context {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .context strong { color: var(--text); font-weight: 600; }
+
+  /* TIME BLOCKS */
+  .block {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    background: var(--surface);
+  }
+
+  .block:hover { border-color: var(--accent); }
+
+  .block-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 18px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .block-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .morning-color { background: var(--morning); box-shadow: 0 0 8px var(--morning); }
+  .boot-color { background: var(--boot); box-shadow: 0 0 8px var(--boot); }
+  .night-color { background: var(--night); box-shadow: 0 0 8px var(--night); }
+  .rest-color { background: var(--rest); box-shadow: 0 0 8px var(--rest); }
+
+  .block-time {
+    font-family: 'Syne Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    min-width: 90px;
+  }
+
+  .block-title {
+    flex: 1;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .block-arrow {
+    font-size: 12px;
+    color: var(--muted);
+    transition: transform 0.25s;
+  }
+
+  .block.open .block-arrow { transform: rotate(180deg); }
+
+  .block-body {
+    display: none;
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+
+  .block.open .block-body { display: block; }
+
+  .task-list { list-style: none; }
+
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: padding-left 0.2s;
+  }
+
+  .task:last-child { border-bottom: none; }
+  .task:hover { padding-left: 4px; }
+
+  .task-check {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    transition: all 0.2s;
+  }
+
+  .task.done .task-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .task.done .task-info { opacity: 0.4; }
+
+  .task-info { flex: 1; }
+
+  .task-name {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .task-detail {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.5;
+    font-weight: 400;
+  }
+
+  .task-badge {
+    font-family: 'Syne Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .badge-prog { background: rgba(78,205,196,0.15); color: var(--boot); }
+  .badge-eng { background: rgba(255,209,102,0.15); color: var(--gold); }
+  .badge-com { background: rgba(123,97,255,0.15); color: var(--accent); }
+  .badge-dis { background: rgba(255,107,157,0.15); color: var(--accent2); }
+  .badge-esc { background: rgba(97,255,212,0.15); color: var(--accent3); }
+  .badge-ms { background: rgba(255,154,60,0.15); color: var(--morning); }
+  .badge-rest { background: rgba(255,107,157,0.1); color: var(--muted); }
+
+  /* PROGRESS TRACKER */
+  .tracker {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px 18px;
+    margin-top: 28px;
+  }
+
+  .tracker-title {
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .priority-bars { display: flex; flex-direction: column; gap: 10px; }
+
+  .p-bar-row { display: flex; align-items: center; gap: 12px; }
+
+  .p-bar-label {
+    font-size: 12px;
+    color: var(--muted);
+    width: 80px;
+    flex-shrink: 0;
+  }
+
+  .p-bar-track {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .p-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .p-bar-time {
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* WEEKEND */
+  .weekend-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .weekend-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+  }
+
+  .weekend-card h4 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .weekend-card ul {
+    list-style: none;
+  }
+
+  .weekend-card ul li {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.4;
+  }
+
+  .weekend-card ul li:last-child { border-bottom: none; }
+
+  /* REGLAS */
+  .rules {
+    margin-top: 28px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    padding: 20px 18px;
+  }
+
+  .rules h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: var(--accent2);
+  }
+
+  .rule {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .rule:last-child { border-bottom: none; }
+
+  .rule-num {
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    color: var(--accent);
+    min-width: 20px;
+    margin-top: 2px;
+  }
+
+  /* QUOTE */
+  .quote-block {
+    margin-top: 32px;
+    text-align: center;
+    padding: 32px 20px;
+  }
+
+  .quote-block p {
+    font-size: clamp(18px, 4vw, 24px);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.5px;
+  }
+
+  .quote-block p span { color: var(--accent2); }
+
+  .quote-block small {
+    display: block;
+    margin-top: 10px;
+    font-family: 'Syne Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="tag">Rutina · Lunes a Viernes · Sary</span>
+    <h1>Tu día,<br><span>diseñado.</span></h1>
+    <p class="sub">Bootcamp 9am–5pm · Crecimiento nocturno · Fines de semana libres<br>Prioridad: Programación → Inglés → Comunicación → Diseño → Escritura</p>
+  </header>
+
+  <div class="phase-toggle">
+    <button class="phase-btn active" onclick="showPhase('bootcamp')">📚 Con Bootcamp</button>
+    <button class="phase-btn" onclick="showPhase('post')">🚀 Post Mayo</button>
+    <button class="phase-btn" onclick="showPhase('finde')">🌿 Fin de Semana</button>
+  </div>
+
+  <!-- FASE BOOTCAMP -->
+  <div class="day-view active" id="phase-bootcamp">
+
+    <div class="context">
+      <strong>Hasta la 2ª–3ª semana de mayo.</strong> El bootcamp es tu trabajo principal de 9am a 5pm. Todo lo demás va antes o después. La noche es tuya — úsala con intención, no por obligación.
+    </div>
+
+    <!-- MAÑANA -->
+    <div class="block" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot morning-color"></div>
+        <div class="block-time">6:30 – 8:45</div>
+        <div class="block-title">Mañana · Arranque suave</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Inglés — 15 min</div>
+              <div class="task-detail">Podcast tech (Syntax.fm), Duolingo, o leer documentación en inglés. Lo primero que haces, cuando el cerebro está fresco.</div>
+            </div>
+            <span class="task-badge badge-eng">ENG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Repaso del día anterior — 20 min</div>
+              <div class="task-detail">Revisa tus notas del bootcamp. ¿Qué quedó confuso? ¿Qué puedes explicar sin leer? Reforzar > memorizar.</div>
+            </div>
+            <span class="task-badge badge-prog">PROG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Preparación física — 30 min</div>
+              <div class="task-detail">Desayuno, cuerpo, mente. No llegues al bootcamp en modo apagado.</div>
+            </div>
+            <span class="task-badge badge-rest">BIENESTAR</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- BOOTCAMP -->
+    <div class="block open" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot boot-color"></div>
+        <div class="block-time">9:00 – 5:00</div>
+        <div class="block-title">Bootcamp · Modo 100%</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Participar activamente en clase</div>
+              <div class="task-detail">Hablar, preguntar, proponer. Cada vez que abres la boca en clase entrenas expresión verbal. Aprovecha Agile y Scrum — son oro para trabajar en equipo.</div>
+            </div>
+            <span class="task-badge badge-prog">PROG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Tomar notas con estructura</div>
+              <div class="task-detail">No copiar todo — anotar: concepto clave, para qué sirve, ejemplo. Esto ya es escritura profesional en práctica.</div>
+            </div>
+            <span class="task-badge badge-esc">ESC</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">SAC Task Manager — comprometerse con calidad</div>
+              <div class="task-detail">No solo que funcione. Que esté bien documentado, bien explicado, bien presentado. Eso es lo que te diferencia.</div>
+            </div>
+            <span class="task-badge badge-prog">PROG</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- TRANSICIÓN -->
+    <div class="block" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot rest-color"></div>
+        <div class="block-time">5:00 – 6:30</div>
+        <div class="block-title">Descanso · No negociable</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Desconectarse del código</div>
+              <div class="task-detail">Comer, caminar, música, lo que sea que no sea pantalla. Tu cerebro necesita este reset para absorber lo de la noche.</div>
+            </div>
+            <span class="task-badge badge-rest">BIENESTAR</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- NOCHE -->
+    <div class="block open" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot night-color"></div>
+        <div class="block-time">6:30 – 9:30</div>
+        <div class="block-title">Noche · Tu hora de crecer 🔥</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Programación — práctica extra (45 min)</div>
+              <div class="task-detail">Lunes y miércoles: reforzar lo visto en bootcamp. Ejercicios de Java, documentar código, hacer algo pequeño funcionar. No estudiar — hacer.</div>
+            </div>
+            <span class="task-badge badge-prog">PROG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Comunicación verbal — práctica (30 min)</div>
+              <div class="task-detail">Martes y jueves: 2 videos de Víctor Toscano + grabarte explicando algo en voz alta. 2 minutos. Escúchate. Mejora una cosa.</div>
+            </div>
+            <span class="task-badge badge-com">COM</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Inglés — sesión de noche (20 min)</div>
+              <div class="task-detail">Todos los días. Alterna: lunes vocabulario tech, martes listening, miércoles reading, jueves writing corto, viernes lo que más te costó en la semana.</div>
+            </div>
+            <span class="task-badge badge-eng">ENG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Diseño Digital — viernes (45 min)</div>
+              <div class="task-detail">Solo los viernes. Canva, Figma básico, o un tutorial de diseño. No todos los días — consistencia > intensidad.</div>
+            </div>
+            <span class="task-badge badge-dis">DIS</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Escritura — 15 min diarios</div>
+              <div class="task-detail">Escribir 3 oraciones sobre lo que aprendiste hoy. Sin perfeccionismo. El hábito importa más que el resultado ahora.</div>
+            </div>
+            <span class="task-badge badge-esc">ESC</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Microsoft 365 — martes (30 min)</div>
+              <div class="task-detail">Word, Excel, PowerPoint básico. Un tutorial corto de YouTube por semana. Más que suficiente por ahora.</div>
+            </div>
+            <span class="task-badge badge-ms">MS365</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- CIERRE -->
+    <div class="block" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot rest-color"></div>
+        <div class="block-time">9:30 – 10:00</div>
+        <div class="block-title">Cierre · 30 min de mente</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Leer 20 minutos</div>
+              <div class="task-detail">Un libro real. No redes. Alterna entre libro técnico y libro de desarrollo personal/comunicación. Esto te distingue.</div>
+            </div>
+            <span class="task-badge badge-rest">LECT</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Revisar mañana — 5 min</div>
+              <div class="task-detail">¿Qué 3 cosas importan mañana? Escríbelas. Eso es todo. Duerme tranquila.</div>
+            </div>
+            <span class="task-badge badge-rest">PLAN</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- DISTRIBUCIÓN SEMANAL -->
+    <div class="tracker">
+      <div class="tracker-title">Distribución semanal · tiempo de estudio nocturno</div>
+      <div class="priority-bars">
+        <div class="p-bar-row">
+          <div class="p-bar-label">Programación</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:55%; background: var(--boot);"></div></div>
+          <div class="p-bar-time">~5h/sem</div>
+        </div>
+        <div class="p-bar-row">
+          <div class="p-bar-label">Inglés</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:40%; background: var(--gold);"></div></div>
+          <div class="p-bar-time">~2.5h</div>
+        </div>
+        <div class="p-bar-row">
+          <div class="p-bar-label">Comunicación</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:25%; background: var(--accent);"></div></div>
+          <div class="p-bar-time">~1h</div>
+        </div>
+        <div class="p-bar-row">
+          <div class="p-bar-label">Escritura</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:15%; background: var(--accent3);"></div></div>
+          <div class="p-bar-time">~1h</div>
+        </div>
+        <div class="p-bar-row">
+          <div class="p-bar-label">Diseño</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:10%; background: var(--accent2);"></div></div>
+          <div class="p-bar-time">45min</div>
+        </div>
+        <div class="p-bar-row">
+          <div class="p-bar-label">MS 365</div>
+          <div class="p-bar-track"><div class="p-bar-fill" style="width:8%; background: var(--morning);"></div></div>
+          <div class="p-bar-time">30min</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FASE POST MAYO -->
+  <div class="day-view" id="phase-post">
+
+    <div class="context">
+      <strong>Post bootcamp — desde finales de mayo.</strong> Sin horario fijo de 9–5. Más libertad, más responsabilidad propia. El foco cambia: portfolio, inglés conversacional, y buscar trabajo activamente.
+    </div>
+
+    <div class="block open" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot morning-color"></div>
+        <div class="block-time">8:00 – 9:00</div>
+        <div class="block-title">Mañana · Arranque con propósito</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Inglés activo — 30 min</div>
+              <div class="task-detail">Speaking practice, shadowing, o clase online. El foco pasa de escuchar a hablar.</div>
+            </div>
+            <span class="task-badge badge-eng">ENG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Planificación del día — 15 min</div>
+              <div class="task-detail">¿Qué proyecto avanzo hoy? ¿Qué aplicaciones envío? ¿Qué aprendo? Sin plan = día perdido.</div>
+            </div>
+            <span class="task-badge badge-rest">PLAN</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="block open" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot boot-color"></div>
+        <div class="block-time">9:00 – 1:00</div>
+        <div class="block-title">Bloque principal · Deep work</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Portfolio y proyectos — 2–3h</div>
+              <div class="task-detail">Construir, documentar, publicar en GitHub. Este es tu trabajo ahora. Sin portfolio no hay entrevistas.</div>
+            </div>
+            <span class="task-badge badge-prog">PROG</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Aplicar empleos — 1h</div>
+              <div class="task-detail">Enviar CVs, personalizar cartas, hacer seguimiento. Trátalo como trabajo, no como tarea.</div>
+            </div>
+            <span class="task-badge badge-rest">CARRERA</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="block open" onclick="toggleBlock(this)">
+      <div class="block-header">
+        <div class="block-dot night-color"></div>
+        <div class="block-time">3:00 – 6:00</div>
+        <div class="block-title">Tarde · Habilidades de vida</div>
+        <div class="block-arrow">▼</div>
+      </div>
+      <div class="block-body">
+        <ul class="task-list">
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Comunicación verbal — 3x semana</div>
+              <div class="task-detail">Grabarte hablando, practicar mock interviews, o hablar en inglés con alguien. Subir nivel.</div>
+            </div>
+            <span class="task-badge badge-com">COM</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Diseño Digital — 2x semana</div>
+              <div class="task-detail">Figma, UX básico, o diseñar algo para tu portfolio. El diseño suma en tu perfil tech.</div>
+            </div>
+            <span class="task-badge badge-dis">DIS</span>
+          </li>
+          <li class="task" onclick="toggleTask(event,this)">
+            <div class="task-check"></div>
+            <div class="task-info">
+              <div class="task-name">Escritura — artículo o post semanal</div>
+              <div class="task-detail">LinkedIn, blog, o notas públicas. Escribir en público construye tu marca sin que lo notes.</div>
+            </div>
+            <span class="task-badge badge-esc">ESC</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FIN DE SEMANA -->
+  <div class="day-view" id="phase-finde">
+
+    <div class="context">
+      <strong>Sábado y domingo = recarga.</strong> No se trata de no hacer nada — se trata de hacer lo que te nutre. Aprendizaje ligero, sin presión, sin horario fijo.
+    </div>
+
+    <div class="weekend-grid">
+      <div class="weekend-card">
+        <h4><span style="color:var(--accent2)">◆</span> Sábado</h4>
+        <ul>
+          <li>Revisión semanal — ¿qué avancé?</li>
+          <li>Leer algo que disfrutes (1h)</li>
+          <li>Inglés relajado — serie, película, podcast</li>
+          <li>Si hay energía: avanzar proyecto personal</li>
+          <li>Tiempo para ti — sin culpa</li>
+        </ul>
+      </div>
+      <div class="weekend-card">
+        <h4><span style="color:var(--accent3)">◆</span> Domingo</h4>
+        <ul>
+          <li>Planificación de la semana (20 min)</li>
+          <li>Diseño o algo creativo sin presión</li>
+          <li>Ortografía / redacción — ejercicio corto</li>
+          <li>Preparar mentalidad para el lunes</li>
+          <li>Descanso real — sin laptops si puedes</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="rules" style="margin-top: 20px;">
+      <h3>Regla de los fines de semana</h3>
+      <div class="rule">
+        <div class="rule-num">01</div>
+        <div>El descanso no es premio — es parte del plan. Sin él, el lunes empiezas agotada.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">02</div>
+        <div>Si haces algo de estudio, que sea algo que disfrutas o que te da curiosidad, no obligación.</div>
+      </div>
+      <div class="rule">
+        <div class="rule-num">03</div>
+        <div>La revisión semanal del sábado es la única cosa no negociable — 20 minutos, no más.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGLAS GENERALES -->
+  <div class="rules">
+    <h3>⚡ Reglas de la rutina</h3>
+    <div class="rule">
+      <div class="rule-num">01</div>
+      <div>El bootcamp es primero. Si un día estás agotada, cancela la noche — no la mañana ni el bootcamp.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">02</div>
+      <div>Nunca saltes el inglés de la mañana. 15 minutos. Es el hábito más fácil y el que más acumula.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">03</div>
+      <div>Una semana mala no rompe el plan. Lo que lo rompe es no volver. Siempre vuelve.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">04</div>
+      <div>Empieza con el 70% de esto. Luego ajusta. Perfecto no existe — consistente sí.</div>
+    </div>
+    <div class="rule">
+      <div class="rule-num">05</div>
+      <div>Cada viernes: ¿qué aprendí? ¿qué mejoré? ¿qué evité? Sé honesta. Ahí está el crecimiento real.</div>
+    </div>
+  </div>
+
+  <div class="quote-block">
+    <p>No necesitas más tiempo.<br>Necesitas <span>más intención.</span></p>
+    <small>Tu rutina · Tu ritmo · Tu versión</small>
+  </div>
+
+</div>
+
+<script>
+  function showPhase(id) {
+    document.querySelectorAll('.day-view').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.phase-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('phase-' + id).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  function toggleBlock(el) {
+    el.classList.toggle('open');
+  }
+
+  function toggleTask(e, el) {
+    e.stopPropagation();
+    el.classList.toggle('done');
+    const check = el.querySelector('.task-check');
+    check.textContent = el.classList.contains('done') ? '✓' : '';
+  }
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js', { scope: './' })
+      .then(function (r) { console.log('[PWA] SW:', r.scope); })
+      .catch(function (e) { console.info('[PWA] Requiere HTTPS:', e.message); });
+  });
+}
+</script>
+</body>
+</html>
